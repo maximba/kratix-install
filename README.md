@@ -1,4 +1,3 @@
-```
 # Kratix Deployment Tool
 
 ## Project Structure
