@@ -1,0 +1,13 @@
+---
+apiVersion: platform.kratix.io/v1alpha1
+kind: Destination
+metadata:
+  name: "{{ destination_name | default('worker-cluster') }}"
+  labels:
+    environment: "{{ env_label | default('dev') }}"
+spec:
+  path: "{{ destination_name | default('worker-cluster') }}"
+  stateStoreRef:
+    name: default
+    kind: GitStateStore
+

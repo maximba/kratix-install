@@ -1,0 +1,64 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Deploy and Register Kratix Environment
+  hosts: localhost
+  connection: local
+  vars_files:
+    - secrets.yml
+  vars:
+    platform_ctx: "{{ lookup('env', 'PLATFORM') }}"
+    worker_ctx: "{{ lookup('env', 'WORKER') }}"
+    colima_vip: "192.168.64.2"
+    platform_port: "{{ lookup('env', 'PLATFORM_PORT') }}"
+    worker_port: "{{ lookup('env', 'WORKER_PORT') }}"
+
+  pre_tasks:
+    - name: "{{ info_icon }} Connectivity Check: Verifying Colima VIP ({{ colima_vip }})"
+      ansible.builtin.wait_for:
+        host: "{{ colima_vip }}"
+        port: 6443          # Checking the K8s API port
+        state: started
+        timeout: 10         # Fail quickly if not reached
+        msg: >
+          {{ error_icon }} Colima VIP at {{ colima_vip }} is unreachable. 
+          Ensure Colima is running with 'colima status'.
+      loop:
+        - { name: 'Platform', port: "{{ platform_port }}" }
+        - { name: 'Worker', port: "{{ worker_port }}" }
+      register: port_check          
+      ignore_errors: false    
+
+    - name: "{{ error_icon }} Validating Port Accessibility"
+      ansible.builtin.assert:
+        that:
+          - "port_check is succeeded"
+        fail_msg: >
+          {{ error_icon }} Connectivity Failed! 
+          One or both clusters are unreachable at {{ colima_vip }}.
+          Verify Colima is up and Kind clusters are running on ports {{ platform_port }} and {{ worker_port }}.
+        success_msg: "{{ check_icon }} All cluster ports are open and responding."
+      
+    - name: "{{ check_icon }} Connectivity verified for both clusters"
+      ansible.builtin.debug:
+        msg: "All systems go on {{ colima_vip }}"
+      when: port_check is succeeded      
+
+  roles:
+    - role: kratix_install
+      vars:
+        platform_context: "{{ platform_ctx }}"
+        github_username: "{{ vault_github_username }}"
+        github_token: "{{ vault_github_token }}"
+        github_repo: kratix-state
+      tags: install
+
+    - role: kratix_worker
+      vars:
+        platform_context: "{{ platform_ctx }}"
+        worker_context: "{{ worker_ctx }}" 
+      tags: worker
+
+  post_tasks:
+    - name: "{{ check_icon }} Installation Complete"
+      ansible.builtin.debug:
+        msg: "Kratix is fully initialized! Both clusters are synced via the state store."      

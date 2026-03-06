@@ -1,0 +1,16 @@
+apiVersion: platform.kratix.io/v1alpha1
+kind: GitStateStore
+metadata:
+  name: default
+  namespace: kratix-platform-system
+spec:
+  authMethod: basicAuth
+  branch: main
+  path: destinations/
+  gitAuthor:
+    name: kratix-platform
+    email: platform@bxsoft.com
+  secretRef:
+    name: git-credentials
+    namespace: kratix-platform-system
+  url: https://github.com/maximba/kratix-state

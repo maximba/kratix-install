@@ -1,0 +1,52 @@
+---
+- name: "{{ info_icon }} Registering the worker cluster in Kratix"
+  kubernetes.core.k8s:
+    context: "{{ platform_context }}"
+    definition: "{{ lookup('ansible.builtin.template', 'worker-destination.j2') | from_yaml }}"    
+    state: present
+
+- name: "{{ info_icon }} Verifying worker destination status"
+  kubernetes.core.k8s_info:
+    context: "{{ platform_context }}"
+    kind: Destination
+  register: destination_list
+
+- name: "{{ check_icon }} Worker cluster registered successfully"
+  ansible.builtin.debug:
+    msg: "Available Destinations: {{ destination_list.resources | map(attribute='metadata.name') | list }}"
+
+- name: "{{ info_icon }} Waiting for Worker Destination to be Ready"
+  kubernetes.core.k8s_info:
+    context: "{{ platform_context }}"
+    kind: Destination
+    name: "{{ destination_name | default('worker-cluster') }}"
+    api_version: platform.kratix.io/v1alpha1
+  register: worker_status
+  until: 
+    - worker_status.resources[0].status.conditions | selectattr('type', 'equalto', 'Ready') | map(attribute='status') | first == 'True'
+  retries: 10
+  delay: 5
+
+- name: "{{ check_icon }} Worker is reconciled and ready"
+  ansible.builtin.debug:
+    msg: "Kratix has successfully initialized the state store for {{ destination_name | default('worker-cluster') }}."
+
+- name: "{{ info_icon }} Setting up Flux"
+  kubernetes.core.k8s:
+    context: "{{ worker_context }}"
+    src: "{{ flux_url }}"
+    state: present
+
+- name: "{{ info_icon }} Waiting for Flux system pods to be Ready"
+  kubernetes.core.k8s_info:
+    context: "{{ worker_context }}"
+    kind: Pod
+    namespace: flux-system
+    wait: true
+    wait_condition:
+      type: Ready
+      status: "True"
+    wait_timeout: 300
+    wait_sleep: 5
+
+

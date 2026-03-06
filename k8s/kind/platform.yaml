@@ -1,0 +1,10 @@
+---
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: platform
+nodes:
+- role: control-plane
+  image: kindest/node:v1.33.1
+networking:
+  apiServerAddress: "192.168.64.2"
+  apiServerPort: 6443

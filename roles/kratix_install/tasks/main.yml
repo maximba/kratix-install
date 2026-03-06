@@ -1,0 +1,47 @@
+---
+- name: "{{ info_icon }} Installing cert-manager"
+  kubernetes.core.k8s:
+    context: "{{ platform_context }}"
+    src: "{{ cert_manager_url }}"
+    state: present
+
+- name: "{{ info_icon }} Waiting for cert-manager deployment"
+  kubernetes.core.k8s_info:
+    context: "{{ platform_context }}"
+    kind: Deployment
+    name: cert-manager
+    namespace: cert-manager
+  register: cert_manager_status
+  until:
+    - cert_manager_status.resources | length > 0
+    - cert_manager_status.resources[0].status.availableReplicas is defined
+    - cert_manager_status.resources[0].status.availableReplicas >= 1
+  retries: 20
+  delay: 15
+
+- name: "{{ info_icon }} Installing Kratix"
+  kubernetes.core.k8s:
+    context: "{{ platform_context }}"
+    src: "{{ kratix_url }}"
+    state: present
+
+- name: "{{ info_icon }} Creating git-credentials secret"
+  kubernetes.core.k8s:
+    context: "{{ platform_context }}"
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: git-credentials
+        namespace: "{{ kratix_namespace }}"
+      type: Opaque
+      stringData:
+        username: "{{ github_username }}"
+        password: "{{ github_token }}"
+
+- name: "{{ info_icon }} Configurando el GitStateStore"
+  kubernetes.core.k8s:
+    context: "{{ platform_context }}"
+    definition: "{{ lookup('ansible.builtin.template', 'git-state-store.j2') | from_yaml }}"
+    state: present        

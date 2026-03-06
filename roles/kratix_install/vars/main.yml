@@ -1,0 +1,4 @@
+---
+# vars file for kratix_install
+cert_manager_url: "https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.yaml"
+kratix_url: "https://github.com/syntasso/kratix/releases/latest/download/kratix.yaml"

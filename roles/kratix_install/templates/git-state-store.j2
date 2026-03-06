@@ -1,0 +1,17 @@
+---
+apiVersion: platform.kratix.io/v1alpha1
+kind: GitStateStore
+metadata:
+  name: default
+  namespace: "{{ kratix_namespace | default('kratix-platform-system') }}"
+spec:
+  authMethod: basicAuth
+  branch: main
+  path: destinations/
+  gitAuthor:
+    name: kratix-platform
+    email: platform@{{ github_username }}.com
+  secretRef:
+    name: git-credentials
+    namespace: "{{ kratix_namespace | default('kratix-platform-system') }}"
+  url: "https://github.com/{{ github_username }}/{{ github_repo | default('kratix-state-store') }}"

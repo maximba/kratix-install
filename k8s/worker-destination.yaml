@@ -1,0 +1,12 @@
+apiVersion: platform.kratix.io/v1alpha1
+kind: Destination
+metadata:
+  name: worker-cluster
+  namespace: kratix-platform-system
+  labels:
+    environment: dev
+spec:
+  path: worker-cluster
+  stateStoreRef:
+    name: default
+    kind: GitStateStore
